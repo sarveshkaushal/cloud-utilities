@@ -1,12 +1,13 @@
 package com.prac.cloud.util;
 
+import static java.util.stream.Collectors.toList;
+
 import java.io.File;
 import java.io.FileWriter;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
-import static java.util.stream.Collectors.toList;
 
 import org.apache.commons.csv.CSVFormat;
 import org.apache.commons.csv.CSVPrinter;
@@ -15,9 +16,7 @@ import com.amazonaws.services.dynamodbv2.AmazonDynamoDBClient;
 import com.amazonaws.services.dynamodbv2.model.AttributeValue;
 import com.amazonaws.services.dynamodbv2.model.ScanRequest;
 import com.amazonaws.services.dynamodbv2.model.ScanResult;
-import com.google.gson.Gson;
 
-// TODO: Auto-generated Javadoc
 /**
  * The Class DynamoUtil.
  */
@@ -44,8 +43,9 @@ public class DynamoUtil {
 	 * @param tableName the table name
 	 * @param filePath the file path
 	 * @return the file
+	 * @throws IOException if the printer doesn't closes.
 	 */
-	public File export(String tableName, String filePath){
+	public File export(String tableName, String filePath) throws IOException{
 		ScanResult result = null;
 		List<Map<String, AttributeValue>> resultList = new ArrayList<>();
 		//Implement pagination if the return size of of result is more than 1MB.
@@ -82,11 +82,13 @@ public class DynamoUtil {
 			}
 			
 			csvFilePrinter.flush();
-			csvFilePrinter.close();
 		} catch (IOException e) {
 			e.printStackTrace();
+		} finally {
+			if (null != csvFilePrinter) {
+				csvFilePrinter.close();
+			}
 		}
-		//return csvFilePrinter;
 		return (new File(fileName));
 	}
 	
@@ -99,8 +101,9 @@ public class DynamoUtil {
 	 * @param format the format
 	 * @param projectionExpression the projection expression
 	 * @return the file
+	 * @throws IOException 
 	 */
-	public File export(String tableName, String filePath, String format, String projectionExpression){
+	public File export(String tableName, String filePath, String format, String projectionExpression) throws IOException{
 		return export(tableName, filePath);
 	}
 	
@@ -122,55 +125,7 @@ public class DynamoUtil {
 	 */
 	private List<String> getRows(List<Map<String, AttributeValue>> itemList) {
 		 List<String> rows = new ArrayList<>();
-		 itemList.forEach((map)-> map.forEach((k,v)-> rows.add(convertToString(v))));
+		 itemList.forEach((map)-> map.forEach((k,v)-> rows.add( v.toString() )));
 		 return rows;
 	}
-	
-	/**
-	 * Convert to string.
-	 *
-	 * @param attribute the attribute
-	 * @return the string
-	 */
-	private static String convertToString(AttributeValue attribute){
-		 String type = null;
-		 Gson gson = new Gson();
-		 String result = null;
-		 if (attribute.getS() != null) {
-				type = "S";
-			}
-			if (attribute.getN() != null) {
-				type = "N";
-			}
-			if (attribute.getM() != null) {
-				type = "M";
-			}
-			if (attribute.getL() != null) {
-				type = "L";
-			}
-			if (attribute.getBOOL() != null) {
-				type = "B";
-			}
-			
-			switch (type) {
-			case "S":
-				result = gson.toJson(attribute.getS());
-				break;
-			case "N":
-				result = gson.toJson(attribute.getN());
-				break;
-			case "B":
-				result = gson.toJson(attribute.getBOOL());
-				break;
-			case "M":
-				result = gson.toJson((Map<String, AttributeValue>) attribute.getM());
-				break;
-			case "L":
-				result = gson.toJson(attribute.getL());
-				break;
-			default:
-				result = "";
-			}
-				return result;
-	 }
 }
