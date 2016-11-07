@@ -16,6 +16,7 @@ import com.amazonaws.services.dynamodbv2.AmazonDynamoDBClient;
 import com.amazonaws.services.dynamodbv2.model.AttributeValue;
 import com.amazonaws.services.dynamodbv2.model.ScanRequest;
 import com.amazonaws.services.dynamodbv2.model.ScanResult;
+import com.google.gson.Gson;
 
 /**
  * The Class DynamoUtil.
@@ -125,7 +126,55 @@ public class DynamoUtil {
 	 */
 	private List<String> getRows(List<Map<String, AttributeValue>> itemList) {
 		 List<String> rows = new ArrayList<>();
-		 itemList.forEach((map)-> map.forEach((k,v)-> rows.add( v.toString() )));
+		 itemList.forEach((map)-> map.forEach((k,v)-> rows.add( convertToString(v) )));
 		 return rows;
 	}
+	
+	/**
+	 * Convert to string.
+	 *
+	 * @param attribute the attribute
+	 * @return the string
+	 */
+	private static String convertToString(AttributeValue attribute){
+		 String type = null;
+		 Gson gson = new Gson();
+		 String result = null;
+		 if (attribute.getS() != null) {
+				type = "S";
+			}
+			if (attribute.getN() != null) {
+				type = "N";
+			}
+			if (attribute.getM() != null) {
+				type = "M";
+			}
+			if (attribute.getL() != null) {
+				type = "L";
+			}
+			if (attribute.getBOOL() != null) {
+				type = "B";
+			}
+			
+			switch (type) {
+			case "S":
+				result = gson.toJson(attribute.getS());
+				break;
+			case "N":
+				result = gson.toJson(attribute.getN());
+				break;
+			case "B":
+				result = gson.toJson(attribute.getBOOL());
+				break;
+			case "M":
+				result = gson.toJson((Map<String, AttributeValue>) attribute.getM());
+				break;
+			case "L":
+				result = gson.toJson(attribute.getL());
+				break;
+			default:
+				result = "";
+			}
+				return result;
+	 }
 }
